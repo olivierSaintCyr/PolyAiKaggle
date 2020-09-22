@@ -1,13 +1,12 @@
 import numpy as np
-
-import scipy
-from scipy import ndimage
 import matplotlib.pyplot as plt
 import os
+from tqdm import tqdm
 
 currentDir = os.getcwd().replace("src", "")
-training_dataset_path = currentDir + "datasets/data_train.npz"
-test_dataset_path = currentDir + "datasets/data_test.npz"
+dataset_path = currentDir + "datasets/"
+training_dataset_path = dataset_path + "data_train.npz"
+test_dataset_path = dataset_path + "data_test.npz"
 
 
 def averageNN(image, i_, j_, radius):
@@ -21,7 +20,10 @@ def averageNN(image, i_, j_, radius):
                             if ((image[i][j] != np.zeros(3)).all()): #remove blank neighboor
                                 sumPixel += image[i][j]
                                 nPixel += 1
-    return sumPixel/(nPixel)
+    if nPixel != 0:
+        return sumPixel/(nPixel)
+    else:
+        return sumPixel
 
 
 def fill_blanks_averageNN(image, radius):
@@ -32,17 +34,33 @@ def fill_blanks_averageNN(image, radius):
                 image[i][j] = new_pixel
     return image
 
+def fill_blank_averageNN_batch(dataset, radius):
+    new_dataset = []
+    for i in tqdm(range(dataset.shape[0])):
+        new_dataset.append(fill_blanks_averageNN(dataset[i], radius))
+    return np.asarray(new_dataset)
+
+def save_fill_blank_averageNN_batch(filename, dataset, radius):
+    new_dataset = fill_blank_averageNN_batch(dataset, radius)
+    np.save(filename, new_dataset)
+
 if __name__ == "__main__":
     dataset_train = np.load(training_dataset_path)
     images = dataset_train['data']
 
     fig = plt.figure()
+    plt.subplot(1, 2, 1)
+    plt.imshow(images[0])
 
-    plt.imshow(images[65])
-    plt.show()
-
-    dst = fill_blanks_averageNN(images[65],radius=1)
+    plt.subplot(1, 2, 2)
+    dst = fill_blanks_averageNN(images[0], radius=1)
     plt.imshow(dst)
 
     plt.show()
+
+    save_fill_blank_averageNN_batch(dataset_path + 'test.npy', images[0:400], radius=1)
+
+
+
+
 
