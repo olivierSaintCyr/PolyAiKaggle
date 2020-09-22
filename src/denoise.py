@@ -13,11 +13,9 @@ test_dataset_path = currentDir + "datasets/data_test.npz"
 def averageNN(image, i_, j_, radius):
     sumPixel = 0
     nPixel = 0
-    print("NEW PIXEL")
     for i in range(i_ - radius, i_ + radius + 1):
         for j in range(j_ - radius, j_ + radius + 1):
             if ((i >= 0) and (j >= 0)):
-                print(i, j)
                 if((i < image.shape[0]) and (j < image.shape[1])):
                         if((i != i_) and  (j != j_)): # remove the blank pixel
                             if ((image[i][j] != np.zeros(3)).all()): #remove blank neighboor
@@ -34,7 +32,6 @@ def fill_blanks_averageNN(image, radius):
                 image[i][j] = new_pixel
     return image
 
-
 if __name__ == "__main__":
     dataset_train = np.load(training_dataset_path)
     images = dataset_train['data']
@@ -43,7 +40,6 @@ if __name__ == "__main__":
 
     plt.imshow(images[65])
     plt.show()
-
 
     dst = fill_blanks_averageNN(images[65],radius=1)
     plt.imshow(dst)
