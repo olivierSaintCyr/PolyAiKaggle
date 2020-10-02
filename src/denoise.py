@@ -49,16 +49,14 @@ if __name__ == "__main__":
     images = dataset_train['data']
 
     fig = plt.figure()
-    plt.subplot(1, 2, 1)
-    plt.imshow(images[0])
+    
+    dst_batch = fill_blank_averageNN_batch(images[0:201], radius=1)
 
-    plt.subplot(1, 2, 2)
-    dst = fill_blanks_averageNN(images[0], radius=1)
-    plt.imshow(dst)
+    for i in range(200):
+        plt.subplot(20, 10, i+1)
+        plt.imshow(dst_batch[i])
 
     plt.show()
-
-    save_fill_blank_averageNN_batch(dataset_path + 'test.npy', images[0:400], radius=1)
 
 
 
