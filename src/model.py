@@ -10,6 +10,9 @@ import numpy as np
 import os
 
 import tensorflow.keras as keras
+import time
+import tensorboard
+import matplotlib.pyplot as plt
 
 currentDir = os.getcwd().replace("src", "")
 dataset_path = currentDir + "datasets/"
@@ -28,38 +31,50 @@ def get_class(modelOutput): #takes the max probability index of a row and turns 
     return b
 
 class convNeuralNet:
-    def __init__(self, X):
+    def __init__(self):
         self.model = self.modelInit()
 
     def modelInit(self):
         model = keras.models.Sequential()
         
         
-        model.add(keras.layers.Conv2D(256, (3,3), input_shape = (32,32,3), activation='relu'))
+        model.add(keras.layers.Conv2D(64, (3,3), input_shape = (32,32,3), activation='relu'))
         model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
-        model.add(keras.layers.Dropout(0.55))
-        model.add(keras.layers.Conv2D(128, (3,3), activation='relu'))
-        model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
-        model.add(keras.layers.Dropout(0.65))
-        model.add(keras.layers.Flatten())
         
-        model.add(keras.layers.Dense(128, activation = 'tanh'))
+        model.add(keras.layers.SpatialDropout2D(0.3))
 
+        model.add(keras.layers.Conv2D(64, (3,3), activation='relu'))
+        model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
+        model.add(keras.layers.SpatialDropout2D(0.3))
+
+        model.add(keras.layers.Conv2D(64, (3,3),  activation='relu'))
+        model.add(keras.layers.SpatialDropout2D(0.3))
+
+        model.add(keras.layers.Conv2D(64, (3,3),  activation='relu'))
+        model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
+
+        model.add(keras.layers.Flatten())
+        model.add(keras.layers.BatchNormalization())
+        model.add(keras.layers.Dropout(0.3))
+        
+        model.add(keras.layers.Dense(200, activation = 'relu'))
+        model.add(keras.layers.Dropout(0.3))
+
+        model.add(keras.layers.Dense(200, activation = 'relu'))
+        
         model.add(keras.layers.Dense(20, activation = 'softmax'))
 
         model.compile(loss = 'categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         return model
-
+    
     def modelLoad(self, path):
         self.model = keras.models.load_model(path)
     
     def train(self, x, y, nEpochs):
         self.model.fit(x, y, epochs = nEpochs)
     
-    # def predict(self, data_x);
-    #     self.model.predict_classes(data_x)
-
-
+    def predict(self, data_x):
+        return self.model.predict(data_x)
     
 
 if __name__ == "__main__":
@@ -69,29 +84,46 @@ if __name__ == "__main__":
     images = dataset['arr_0']
     labels = dataset['arr_1']
     
-    imagesTrain = images[0:47000]
-    imageValidation = images[-2999:]
+    imagesTrain = images[0:45000]
+    imageValidation = images[-4999:]
     
     lablesOneHot = to_oneHot(labels)
-    lablesTrain = lablesOneHot[0:47000]
-    lablesValidation = lablesOneHot[-2999:]
+    lablesTrain = lablesOneHot[0:45000]
+    lablesValidation = lablesOneHot[-4999:]
     
     predictImages = test['arr_0']
     
     print(imagesTrain.shape)
     
-    modelConv = convNeuralNet(imagesTrain)
-    #train_dataset = tf.data.Dataset.from_tensor_slices((imagesTrain, lablesTrain))
+    modelConv = convNeuralNet()
+    train_dataset = tf.data.Dataset.from_tensor_slices((imagesTrain, lablesTrain))
     
-    modelConv.modelLoad(currentDir + "modeldropout4")
+    I = 98
+    modelConv.modelLoad(currentDir + "/superBigmodel4BackUP/" + str(I))
 
-    for i in range(10):
-        modelConv.train(imagesTrain, lablesTrain, nEpochs = 5)
+    
+    # y = modelConv.model.predict(imageValidation)
+    # m = tf.keras.metrics.CategoricalAccuracy()
+    # m.update_state(lablesValidation, y)
+    # m.result().numpy()
+    # print(" accuracy : ",m.result().numpy())
+    
+    accuracy = []
+    bestAccuracy = 0
+    for i in range(100):
+        modelConv.train(imagesTrain, lablesTrain, nEpochs = 10)
         
         y = modelConv.model.predict(imageValidation)
         m = tf.keras.metrics.CategoricalAccuracy()
         m.update_state(lablesValidation, y)
-        m.result().numpy()
-        print("i: ", i, " accuracy : ",m.result().numpy())
+        accuracy.append(m.result().numpy())
+        print("i: ", i+I, " accuracy : ",accuracy[-1])
+        if((i +1)% 3==0):
+            modelConv.model.save(currentDir + "/superBigmodel4BackUP/" + str(i+I))
+        if(accuracy[-1]>bestAccuracy):
+            modelConv.model.save(currentDir + "/superBigmodel4Best/")
+            bestAccuracy = accuracy[-1]
     
-    modelConv.model.save(currentDir + "modeldropout4")
+    plt.plot(accuracy)
+    plt.show()
+
