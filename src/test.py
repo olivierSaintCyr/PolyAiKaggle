@@ -14,7 +14,7 @@ def one_hot_to_lables(onehotData):
 
 if __name__ == '__main__':
     convModel = model.convNeuralNet()
-    convModel.modelLoad(currentDir + "/superBigmodel2Best")
+    convModel.modelLoad(currentDir + "/superBigmodel5Best")
     X = np.load(dataset_path + "denoisedTest.npz")
     
     prediction = np.array(convModel.predict(X['arr_0']))
@@ -30,5 +30,5 @@ if __name__ == '__main__':
     output = np.stack((i, labels), axis = 1)
     print(output)
 
-    exportCSV.write_to_file(output.tolist(), outputFile = "prediction.csv")
+    exportCSV.write_to_file(output.tolist(), outputFile = "prediction54.csv")
    

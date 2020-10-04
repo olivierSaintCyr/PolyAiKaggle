@@ -38,27 +38,25 @@ class convNeuralNet:
         model = keras.models.Sequential()
         
         
-        model.add(keras.layers.Conv2D(64, (3,3), input_shape = (32,32,3), activation='relu'))
+        model.add(keras.layers.Conv2D(80, (3,3), input_shape = (32,32,3), activation='relu'))
         model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
         
-        model.add(keras.layers.SpatialDropout2D(0.3))
+        model.add(keras.layers.SpatialDropout2D(0.45))
 
         model.add(keras.layers.Conv2D(64, (3,3), activation='relu'))
         model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
-        model.add(keras.layers.SpatialDropout2D(0.3))
-
-        model.add(keras.layers.Conv2D(64, (3,3),  activation='relu'))
-        model.add(keras.layers.SpatialDropout2D(0.3))
+        model.add(keras.layers.SpatialDropout2D(0.4))
 
         model.add(keras.layers.Conv2D(64, (3,3),  activation='relu'))
         model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
 
+
         model.add(keras.layers.Flatten())
         model.add(keras.layers.BatchNormalization())
-        model.add(keras.layers.Dropout(0.3))
+        
         
         model.add(keras.layers.Dense(200, activation = 'relu'))
-        model.add(keras.layers.Dropout(0.3))
+        model.add(keras.layers.Dropout(0.4))
 
         model.add(keras.layers.Dense(200, activation = 'relu'))
         
@@ -75,6 +73,13 @@ class convNeuralNet:
     
     def predict(self, data_x):
         return self.model.predict(data_x)
+
+    def ajustDropout(self, new_rates):
+        if(len(new_rates)==3):
+            self.model.layers[2].rate = new_rates[0]
+            self.model.layers[5].rate = new_rates[1]
+            self.model.layers[11].rate = new_rates[2]
+
     
 
 if __name__ == "__main__":
@@ -98,10 +103,10 @@ if __name__ == "__main__":
     modelConv = convNeuralNet()
     train_dataset = tf.data.Dataset.from_tensor_slices((imagesTrain, lablesTrain))
     
-    I = 98
-    modelConv.modelLoad(currentDir + "/superBigmodel4BackUP/" + str(I))
+    I = 464
+    modelConv.modelLoad(currentDir + "/superBigmodel5BackUP/" + str(I))
 
-    
+    # modelConv.modelLoad(currentDir + "/superBigmodel5Best/")
     # y = modelConv.model.predict(imageValidation)
     # m = tf.keras.metrics.CategoricalAccuracy()
     # m.update_state(lablesValidation, y)
@@ -109,19 +114,26 @@ if __name__ == "__main__":
     # print(" accuracy : ",m.result().numpy())
     
     accuracy = []
-    bestAccuracy = 0
-    for i in range(100):
-        modelConv.train(imagesTrain, lablesTrain, nEpochs = 10)
-        
+    bestAccuracy = 0.5421084
+    
+    new_rates = [0.38, 0.36, 0.28]
+    modelConv.ajustDropout(new_rates)
+    
+    for i in range(50):
+        modelConv.train(imagesTrain, lablesTrain, nEpochs = 3)
+        modelConv.ajustDropout([0, 0, 0])
         y = modelConv.model.predict(imageValidation)
         m = tf.keras.metrics.CategoricalAccuracy()
         m.update_state(lablesValidation, y)
         accuracy.append(m.result().numpy())
+       
         print("i: ", i+I, " accuracy : ",accuracy[-1])
+        modelConv.ajustDropout(new_rates)
         if((i +1)% 3==0):
-            modelConv.model.save(currentDir + "/superBigmodel4BackUP/" + str(i+I))
+            modelConv.model.save(currentDir + "/superBigmodel5BackUP/" + str(i+I))
         if(accuracy[-1]>bestAccuracy):
-            modelConv.model.save(currentDir + "/superBigmodel4Best/")
+            print("BEST ACCURACY")
+            modelConv.model.save(currentDir + "/superBigmodel5Best/")
             bestAccuracy = accuracy[-1]
     
     plt.plot(accuracy)
